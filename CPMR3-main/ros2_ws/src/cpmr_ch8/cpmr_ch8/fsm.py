@@ -116,7 +116,7 @@ class FSM(Node):
             self._publisher.publish(twist)
             return False
 
-        # pointing the right direction, so go there
+        # since we are now pointing to the rigth direction, go there
         if dist > 0.1*0.1:
             twist.linear.x = 0.3
             self._publisher.publish(twist)
@@ -217,7 +217,7 @@ class FSM(Node):
     
     # THIS IS THE STATE THAT MOVES THE ROBOT TO THE NEXT ROW
     def _do_state_move_to_next_row(self):
-    
+        pass
     #=======================================================================================================================
 
     # HERE, WE ARE RETURNING TO THE ORIGIN (NOT THE POINT WHERE WE STARTED THE TASK, BUT WHERE WE STARTED THE PROGRAM)
