@@ -94,7 +94,7 @@ class FSM(Node):
         self._cur_theta = 0.0
         self._cur_state = FSM_STATES.AT_START
         self._start_time = self.get_clock().now().nanoseconds * 1e-9
-        self.goalList = [[2,2,math.pi/2],[2,6,math.pi/2],[2.5,6,math.pi/2],[2.5,2,math.pi/2]] 
+        self.goalList = [[2,2,math.pi/2],[2,6,0],[2.5,6,3*(math.pi/2)],[2.5,2,0]] 
         self. currentGoal = self.goalList[0] 
         self.robotSpeed=0.5
         self.currentIndex =0 
@@ -157,7 +157,7 @@ class FSM(Node):
         y=1
         # self.log
         if isAtGoal:
-            if self.currentGoal[0] == [3.5,2]:
+            if self.currentGoal[0] == 2.5 and self.currentGoal[1] == 2:
                 self._cur_state = FSM_STATES.RETURNING_FROM_TASK
 
             elif self.currentGoal == self.goalList[3]:
