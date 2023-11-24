@@ -94,11 +94,13 @@ class FSM(Node):
         self._cur_theta = 0.0
         self._cur_state = FSM_STATES.AT_START
         self._start_time = self.get_clock().now().nanoseconds * 1e-9
-        self.goalList = (2, 2, math.pi/2)#,(2, 4, math.pi/2),(3, 4, math.pi/2),(3, 2, math.pi/2)]
-        self.robotSpeed=0.7
+        self.goalList = [[2,2,math.pi/2],[2,6,math.pi/2],[2.5,6,math.pi/2],[2.5,2,math.pi/2]] 
+        self. currentGoal = self.goalList[0] 
+        self.robotSpeed=0.5
         self.currentIndex =0 
 
     def _drive_to_goal(self, goal_x, goal_y, goal_theta):
+        self.get_logger().info(f'CURRENT GOAL ({goal_x}, {goal_y})')
         self.get_logger().info(f'{self.get_name()} drive to goal')
         twist = Twist()
 
@@ -149,11 +151,22 @@ class FSM(Node):
 
     # HERE WE ARE HEADING TO GOAL (I.E., HEADING TO THE STARTING POSITION WHERE WE WILL BEGIN TO CUT THE GRASS)
     def _do_state_heading_to_task(self):
-        isAtGoal = self._drive_to_goal(*self.goalList[self.currentIndex])
+        isAtGoal = self._drive_to_goal(*self.currentGoal)
+        # self.get_logger().info(f'{self.currentGoal} \n')
+        x=0
+        y=1
+        # self.log
         if isAtGoal:
-            self.currentIndex += 1 
-        if isAtGoal and self.currentIndex == len(self.goalList):
-            self._cur_state = FSM_STATES.RETURNING_FROM_TASK
+            if self.currentGoal[0] == [3.5,2]:
+                self._cur_state = FSM_STATES.RETURNING_FROM_TASK
+
+            elif self.currentGoal == self.goalList[3]:
+               for goal in self.goalList:
+                   goal[x] += 1
+               self.currentGoal = self.goalList[0]
+            else:
+                index = self.goalList.index(self.currentGoal)
+                self.currentGoal = self.goalList[index+1] 
         # for location in goalList:
         #     while not self._drive_to_goal(location):
         #         self.get_logger().info(f'{self.get_name()} heading to task {self._cur_x} {self._cur_y} {self._cur_theta}')
