@@ -137,7 +137,9 @@ class FSM(Node):
         #===========================================================================================
         # this is the model component of cutting the grass
         # here we describe how the robot moves along the row
+        # ALTHOUGH WE CAN USE THE _drive_to_goal method above, we wanted to have custom logger statements
         def _cut_grass_row(self, row_width, goal_x, goal_y, goal_theta):
+        
             self.get_logger().info(f'{self.get_name()} cutting grass row')
             twist = Twist()
             
@@ -145,6 +147,33 @@ class FSM(Node):
             y_diff = goal_y - self._cur_y
             dist = x_diff * x_diff + y_diff * y_diff
             self.get_logger().info(f'{self.get_name()} {x_diff} {y_diff}')
+            
+            heading = math.atan2(y_diff, x_diff)
+            if abs(self._cur_theta - heading) > math.pi/20:
+                if heading > self._cur_theta:
+                    twist.angular.z = 0.2
+                else:
+                    twist.angular.z = -0.2
+                self.get_logger().info(f'{self.get_name()} cutting grass: correcting orientation')
+                self._publisher.publish(twist)
+                return false
+                
+            if dist > 0.1*0.1:
+                twist.linear.x = 0.3
+                self._publisher.publish(twist)
+                self.get_logger().info(f'{self.get_name()} ')
+                return False
+                
+            if abs(goal.theta - self._cur_theta) > math.pi/20:
+                if goal_theta > self._cur_theta:
+                    twist.angular.z = 0.005
+                
+                else:
+                    twist.angular.z = -0.005
+                self.get_logger().info(f'{self.get_name()} grass cutting: correcting orientation')
+                self._publisher.publish(twist)
+            self.get_logger().info(f'{self.get_name()} at end of row')
+            return True
             
             
         # here we describe the motion of the robot's change in direction    
