@@ -40,7 +40,6 @@ row_width = 6
 num_rows = 4
 row_offset = 0.5 
 
-
 # HARD CODED PARAMETER SET:
 
 
@@ -95,6 +94,9 @@ class FSM(Node):
         self._cur_theta = 0.0
         self._cur_state = FSM_STATES.AT_START
         self._start_time = self.get_clock().now().nanoseconds * 1e-9
+        self.goalList = (2, 2, math.pi/2)#,(2, 4, math.pi/2),(3, 4, math.pi/2),(3, 2, math.pi/2)]
+        self.robotSpeed=0.7
+        self.currentIndex =0 
 
     def _drive_to_goal(self, goal_x, goal_y, goal_theta):
         self.get_logger().info(f'{self.get_name()} drive to goal')
@@ -116,9 +118,9 @@ class FSM(Node):
             self._publisher.publish(twist)
             return False
 
-        # since we are now pointing to the rigth direction, go there
+        # since we are now pointing to the right direction, go there
         if dist > 0.1*0.1:
-            twist.linear.x = 0.3
+            twist.linear.x = self.robotSpeed 
             self._publisher.publish(twist)
             self.get_logger().info(f'{self.get_name()} driving to goal')
             return False
@@ -134,64 +136,6 @@ class FSM(Node):
         self.get_logger().info(f'{self.get_name()} at goal pose')
         return True
         
-        #===========================================================================================
-        # this is the model component of cutting the grass
-        # here we describe how the robot moves along the row
-        # ALTHOUGH WE CAN USE THE _drive_to_goal method above, we wanted to have custom logger statements
-        def _cut_grass_row(self, row_width, goal_x, goal_y, goal_theta):
-        
-            self.get_logger().info(f'{self.get_name()} cutting grass row')
-            twist = Twist()
-            
-            x_diff = goal_x - self._cur_x
-            y_diff = goal_y - self._cur_y
-            dist = x_diff * x_diff + y_diff * y_diff
-            self.get_logger().info(f'{self.get_name()} {x_diff} {y_diff}')
-            
-            heading = math.atan2(y_diff, x_diff)
-            if abs(self._cur_theta - heading) > math.pi/20:
-                if heading > self._cur_theta:
-                    twist.angular.z = 0.2
-                else:
-                    twist.angular.z = -0.2
-                self.get_logger().info(f'{self.get_name()} cutting grass: correcting orientation')
-                self._publisher.publish(twist)
-                return false
-                
-            if dist > 0.1*0.1:
-                twist.linear.x = 0.3
-                self._publisher.publish(twist)
-                self.get_logger().info(f'{self.get_name()} ')
-                return False
-                
-            if abs(goal.theta - self._cur_theta) > math.pi/20:
-                if goal_theta > self._cur_theta:
-                    twist.angular.z = 0.005
-                
-                else:
-                    twist.angular.z = -0.005
-                self.get_logger().info(f'{self.get_name()} grass cutting: correcting orientation')
-                self._publisher.publish(twist)
-            self.get_logger().info(f'{self.get_name()} at end of row')
-            return True
-            
-            
-        # here we describe the motion of the robot's change in direction    
-        def _turn_using_row_offset(self, row_offset, goal_x, goal_y, goal_theta):
-        
-            self.get_logger().info(f'{self.get_name()} turning to next row')
-            twist = Twist()
-       
-            x_diff = goal_x - self._cur_x
-            y_diff = goal_y - self._cur_y
-            dist = x_diff * x_diff + y_diff * y_diff
-            self.get_logger().info(f'{self.get_name()} {x_diff} {y_diff}')     
-       
-        #===========================================================================================
-        # END OF FSM CLASS
-        
-        
-        
         
 
     def _do_state_at_start(self):
@@ -205,9 +149,16 @@ class FSM(Node):
 
     # HERE WE ARE HEADING TO GOAL (I.E., HEADING TO THE STARTING POSITION WHERE WE WILL BEGIN TO CUT THE GRASS)
     def _do_state_heading_to_task(self):
-        self.get_logger().info(f'{self.get_name()} heading to task {self._cur_x} {self._cur_y} {self._cur_theta}')
-        if self._drive_to_goal(2, 2, math.pi/2):
+        isAtGoal = self._drive_to_goal(*self.goalList[self.currentIndex])
+        if isAtGoal:
+            self.currentIndex += 1 
+        if isAtGoal and self.currentIndex == len(self.goalList):
             self._cur_state = FSM_STATES.RETURNING_FROM_TASK
+        # for location in goalList:
+        #     while not self._drive_to_goal(location):
+        #         self.get_logger().info(f'{self.get_name()} heading to task {self._cur_x} {self._cur_y} {self._cur_theta}')
+
+        # if self._drive_to_goal(2, 2, math.pi/2):
             
             
     #=======================================================================================================================
