@@ -160,7 +160,7 @@ class FSM(Node):
         # self.get_logger().info(f'{self.currentGoal} \n')
         x=0
         y=1
-        # self.log
+        
         
         if isAtGoal:
             if self.currentGoal[x] == 3.5 and self.currentGoal[y] == 2:
