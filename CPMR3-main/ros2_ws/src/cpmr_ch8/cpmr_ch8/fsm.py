@@ -74,7 +74,6 @@ class FSM_STATES(Enum):
     # need to add a task state(s)
     #==============================================
     PERFORMING_TASK = 'Cutting the grass'
-    TURNING_TASK = 'Moving to next row'
     #===============================================
     RETURNING_FROM_TASK = 'Returning from Task',
     TASK_DONE = 'Task Done'
@@ -94,9 +93,9 @@ class FSM(Node):
         self._cur_theta = 0.0
         self._cur_state = FSM_STATES.AT_START
         self._start_time = self.get_clock().now().nanoseconds * 1e-9
-        self.goalList = [[2,2,math.pi/2],[2,6,0],[2.5,6,3*(math.pi/2)],[2.5,2,0]] 
+        self.goalList = [[3,3,math.pi/2],[3,6,math.pi],[3.5,6,3*(math.pi/2)],[3.5,3,math.pi]] 
         self. currentGoal = self.goalList[0] 
-        self.robotSpeed=0.5
+        self.robotSpeed=0.3
         self.currentIndex =0 
 
     def _drive_to_goal(self, goal_x, goal_y, goal_theta):
@@ -113,9 +112,9 @@ class FSM(Node):
         heading = math.atan2(y_diff, x_diff)
         if abs(self._cur_theta - heading) > math.pi/20: 
             if heading > self._cur_theta:
-                twist.angular.z = 0.2
+                twist.angular.z = 0.10
             else:
-               twist.angular.z = -0.2
+               twist.angular.z = -0.10
             self.get_logger().info(f'{self.get_name()} turning towards goal')
             self._publisher.publish(twist)
             return False
@@ -148,48 +147,46 @@ class FSM(Node):
         if now > (self._start_time + 2):
             # once the 2 seconds have passed, lets head to our task
             self._cur_state = FSM_STATES.HEADING_TO_TASK
-
-    # HERE WE ARE HEADING TO GOAL (I.E., HEADING TO THE STARTING POSITION WHERE WE WILL BEGIN TO CUT THE GRASS)
+            
     def _do_state_heading_to_task(self):
+        self.get_logger().info(f'{self.get_name()} heading to task {self._cur_x} {self._cur_y} {self._cur_theta}')
+        if self._drive_to_goal(3, 3, math.pi/2):
+            self._cur_state = FSM_STATES.PERFORMING_TASK
+
+    #=======================================================================================================================
+    # HERE WE ARE HEADING TO GOAL (I.E., HEADING TO THE STARTING POSITION WHERE WE WILL BEGIN TO CUT THE GRASS)
+    def _do_state_performing_task(self):
         isAtGoal = self._drive_to_goal(*self.currentGoal)
         # self.get_logger().info(f'{self.currentGoal} \n')
         x=0
         y=1
         # self.log
+        
         if isAtGoal:
-            if self.currentGoal[0] == 2.5 and self.currentGoal[1] == 2:
+            if self.currentGoal[x] == 3.5 and self.currentGoal[y] == 2:
+                self.get_logger().info(f'{self.get_name()} completed mowing grass')
                 self._cur_state = FSM_STATES.RETURNING_FROM_TASK
-
+            
             elif self.currentGoal == self.goalList[3]:
-               for goal in self.goalList:
-                   goal[x] += 1
-               self.currentGoal = self.goalList[0]
+                self.get_logger().info(f'{self.get_name()} Turning to next row')
+                for goal in self.goalList:
+                    goal[x] += 1
+                self.currentGoal = self.goalList[0]
             else:
+                self._cur_state = FSM_STATES.PERFORMING_TASK
+                self.get_logger().info(f'{self.get_name()} mowing the row')
                 index = self.goalList.index(self.currentGoal)
                 self.currentGoal = self.goalList[index+1] 
-        # for location in goalList:
-        #     while not self._drive_to_goal(location):
-        #         self.get_logger().info(f'{self.get_name()} heading to task {self._cur_x} {self._cur_y} {self._cur_theta}')
+        
+        
+       	 	 
+    #=======================================================================================================================
 
-        # if self._drive_to_goal(2, 2, math.pi/2):
-            
-            
-    #=======================================================================================================================
-    # IMPLEMENT do_state_performing_task
-    def _do_state_performing_task(self):
-        self.get_logger().info(f'{self.get_name()} grass cutting time {self._cur_x} {self._cur_y} {self._cur_theta}')
-    
-    # THIS IS THE STATE THAT MOVES THE ROBOT TO THE NEXT ROW
-    def _do_state_move_to_next_row(self):
-        pass
-    #=======================================================================================================================
 
     # HERE, WE ARE RETURNING TO THE ORIGIN (NOT THE POINT WHERE WE STARTED THE TASK, BUT WHERE WE STARTED THE PROGRAM)
     def _do_state_returning_from_task(self):
         self.get_logger().info(f'{self.get_name()} returning from task ')
-        # checking if we have finished the task by checking if we are driving back to origin
-        if self._drive_to_goal(0, 0, 0):
-            # if we are driving back to origin, we are then going into the TASK_DONE state
+        if self._drive_to_goal(0.0, 0.0, 0):
             self._cur_state = FSM_STATES.TASK_DONE
 
     # THIS IS THE STATE WHERE WE RECOGNIZE THAT A SPECIFIC TASK IS DONE
@@ -201,6 +198,8 @@ class FSM(Node):
             self._do_state_at_start()
         elif self._cur_state == FSM_STATES.HEADING_TO_TASK:
             self._do_state_heading_to_task()
+        elif self._cur_state == FSM_STATES.PERFORMING_TASK:
+            self._do_state_performing_task()
         elif self._cur_state == FSM_STATES.RETURNING_FROM_TASK:
             self._do_state_returning_from_task()
         elif self._cur_state == FSM_STATES.TASK_DONE:
